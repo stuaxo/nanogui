@@ -20,11 +20,11 @@ endif()
 
 option(NANOGUI_BUILD_EXAMPLE "Build NanoGUI example application?" ON)
 option(NANOGUI_BUILD_SHARED  "Build NanoGUI as a shared library?" ON)
-option(NANOGUI_BUILD_PYTHON  "Build a Python plugin for NanoGUI?" ON)
+### option(NANOGUI_BUILD_PYTHON  "Build a Python plugin for NanoGUI?" ON)
 option(NANOGUI_USE_GLAD      "Use Glad OpenGL loader library?" ${NANOGUI_USE_GLAD_DEFAULT})
 option(NANOGUI_INSTALL       "Install NanoGUI on `make install`?" ON)
 
-set(NANOGUI_PYTHON_VERSION "" CACHE STRING "Python version to use for compiling the Python plugin")
+### set(NANOGUI_PYTHON_VERSION "" CACHE STRING "Python version to use for compiling the Python plugin")
 
 # Required libraries, flags, and include files for compiling and linking against nanogui (all targets)
 set(NANOGUI_EXTRA_LIBS "")
@@ -33,7 +33,7 @@ set(NANOGUI_EXTRA_INCS "")
 
 # Platform-dependent files for libnanogui
 set(LIBNANOGUI_EXTRA_SOURCE "")
-set(LIBNANOGUI_PYTHON_EXTRA_SOURCE "")
+### set(LIBNANOGUI_PYTHON_EXTRA_SOURCE "")
 
 if(APPLE AND NANOGUI_BUILD_SHARED)
   set(CMAKE_MACOSX_RPATH ON)
@@ -76,9 +76,9 @@ endif()
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/ext/glfw" "ext_build/glfw")
 
 # Python support: add NANOGUI_PYTHON flag to all targets
-if (NANOGUI_BUILD_PYTHON)
-  list(APPEND NANOGUI_EXTRA_DEFS -DNANOGUI_PYTHON)
-endif()
+###if (NANOGUI_BUILD_PYTHON)
+###  list(APPEND NANOGUI_EXTRA_DEFS -DNANOGUI_PYTHON)
+###endif()
 
 # Shared library mode: add dllimport/dllexport flags to all symbols
 if (NANOGUI_BUILD_SHARED)
@@ -282,12 +282,12 @@ else()
   set(NANOGUI_LIBRARY_TYPE "STATIC")
 endif()
 
-if (APPLE OR CMAKE_SYSTEM MATCHES "Linux")
-  # Include coroutine support for running the mainloop in detached mode
-  add_definitions(-DCORO_SJLJ)
-  include_directories(ext/coro)
-  list(APPEND LIBNANOGUI_PYTHON_EXTRA_SOURCE ext/coro/coro.c)
-endif()
+###if (APPLE OR CMAKE_SYSTEM MATCHES "Linux")
+###  # Include coroutine support for running the mainloop in detached mode
+###  add_definitions(-DCORO_SJLJ)
+###  include_directories(ext/coro)
+###  list(APPEND LIBNANOGUI_PYTHON_EXTRA_SOURCE ext/coro/coro.c)
+###endif()
 
 add_definitions(${NANOGUI_EXTRA_DEFS})
 
@@ -411,108 +411,108 @@ if(NANOGUI_BUILD_EXAMPLE)
   file(COPY resources/icons DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 endif()
 
-if (NANOGUI_BUILD_PYTHON)
-  # Detect Python
-
-  # Try to autodetect Python (can be overridden manually if needed)
-  list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/ext/pybind11/tools")
-  set(Python_ADDITIONAL_VERSIONS 3.7 3.6 3.5 3.4)
-  find_package(PythonLibsNew ${NANOGUI_PYTHON_VERSION})
-  if (NOT PYTHONLIBS_FOUND)
-    # Python not found -- disable the plugin
-    set(NANOGUI_BUILD_PYTHON OFF CACHE BOOL "Build a Python plugin for NanoGUI?" FORCE)
-    message(WARNING "NanoGUI: not building the Python plugin!")
-  else()
-    message(STATUS "NanoGUI: building the Python plugin.")
-  endif()
-endif()
-
-if (NANOGUI_BUILD_PYTHON)
-  # Need PIC code in libnanogui even when compiled as a static library
-  set_target_properties(nanogui-obj PROPERTIES POSITION_INDEPENDENT_CODE ON)
-  set_target_properties(glfw_objects PROPERTIES POSITION_INDEPENDENT_CODE ON)
-
-  include_directories("ext/pybind11/include" ${PYTHON_INCLUDE_DIR})
-  add_library(nanogui-python-obj OBJECT
-    python/main.cpp
-    python/constants.cpp
-    python/eigen.cpp
-    python/widget.cpp
-    python/layout.cpp
-    python/basics.cpp
-    python/button.cpp
-    python/tabs.cpp
-    python/textbox.cpp
-    python/glcanvas.cpp
-    python/formhelper.cpp
-    python/misc.cpp
-    python/glutil.cpp
-    python/nanovg.cpp
-    python/python.h python/py_doc.h
-    ${LIBNANOGUI_PYTHON_EXTRA_SOURCE})
-
-  add_library(nanogui-python SHARED $<TARGET_OBJECTS:nanogui-python-obj>)
-  set_property(TARGET nanogui-python-obj PROPERTY POSITION_INDEPENDENT_CODE ON)
-  set_target_properties(nanogui-python PROPERTIES OUTPUT_NAME "nanogui")
-  target_link_libraries(nanogui-python nanogui ${NANOGUI_EXTRA_LIBS})
-
-  # Quench warnings on GCC
-  if (CMAKE_COMPILER_IS_GNUCC)
-    set_property(TARGET nanogui-python-obj APPEND PROPERTY COMPILE_OPTIONS "-Wno-unused-variable")
-  endif()
-
-  set_target_properties(nanogui-python PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/python)
-  # The prefix and extension are provided by FindPythonLibsNew.cmake
-  set_target_properties(nanogui-python PROPERTIES PREFIX "${PYTHON_MODULE_PREFIX}")
-  set_target_properties(nanogui-python PROPERTIES SUFFIX "${PYTHON_MODULE_EXTENSION}")
-
-  if (WIN32)
-    # Set output path
-    set_target_properties(nanogui-python PROPERTIES ARCHIVE_OUTPUT_DIRECTORY_RELEASE "Release/python")
-    set_target_properties(nanogui-python PROPERTIES ARCHIVE_OUTPUT_DIRECTORY_DEBUG "Debug/python")
-    set_target_properties(nanogui-python PROPERTIES ARCHIVE_OUTPUT_DIRECTORY_MINSIZEREL "MinSizeRel/python")
-    set_target_properties(nanogui-python PROPERTIES ARCHIVE_OUTPUT_DIRECTORY_RELWITHDEBINFO "RelWithDebInfo/python")
-    set_target_properties(nanogui-python PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE "Release/python")
-    set_target_properties(nanogui-python PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG "Debug/python")
-    set_target_properties(nanogui-python PROPERTIES RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "MinSizeRel/python")
-    set_target_properties(nanogui-python PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "RelWithDebInfo/python")
-
-    # Link against the Python shared library
-    target_link_libraries(nanogui-python ${PYTHON_LIBRARY})
-
-    if (MSVC)
-      # Optimize for size, /bigobj is needed for due to the heavy template metaprogramming in pybind11
-      set_property(TARGET nanogui-python-obj APPEND PROPERTY COMPILE_OPTIONS
-        "/bigobj" "$<$<CONFIG:Release>:/Os>" "$<$<CONFIG:MinSizeRel>:/Os>"
-        "$<$<CONFIG:RelWithDebInfo>:/Os>")
-    endif()
-  elseif(UNIX)
-    # Optimize for size
-    if (U_CMAKE_BUILD_TYPE MATCHES REL)
-      set_property(TARGET nanogui-python-obj APPEND PROPERTY COMPILE_OPTIONS "-Os")
-    endif()
-
-    # Strip unnecessary sections of the binary on Linux/Mac OS
-    if(APPLE)
-      set_target_properties(nanogui-python PROPERTIES MACOSX_RPATH ".")
-      set_target_properties(nanogui-python PROPERTIES LINK_FLAGS "-undefined dynamic_lookup ")
-
-      if (NOT ${U_CMAKE_BUILD_TYPE} MATCHES DEB)
-        add_custom_command(TARGET nanogui-python POST_BUILD COMMAND strip -u -r $<TARGET_FILE:nanogui-python>)
-      endif()
-    else()
-      if (NOT ${U_CMAKE_BUILD_TYPE} MATCHES DEB)
-        add_custom_command(TARGET nanogui-python POST_BUILD COMMAND strip $<TARGET_FILE:nanogui-python>)
-      endif()
-    endif()
-  endif()
-
-  if (NANOGUI_INSTALL)
-    install(TARGETS nanogui-python
-            LIBRARY DESTINATION lib
-            ARCHIVE DESTINATION lib)
-  endif()
-endif()
+###if (NANOGUI_BUILD_PYTHON)
+###  # Detect Python
+###
+###  # Try to autodetect Python (can be overridden manually if needed)
+###  list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/ext/pybind11/tools")
+###  set(Python_ADDITIONAL_VERSIONS 3.7 3.6 3.5 3.4)
+###  find_package(PythonLibsNew ${NANOGUI_PYTHON_VERSION})
+###  if (NOT PYTHONLIBS_FOUND)
+###    # Python not found -- disable the plugin
+###    set(NANOGUI_BUILD_PYTHON OFF CACHE BOOL "Build a Python plugin for NanoGUI?" FORCE)
+###    message(WARNING "NanoGUI: not building the Python plugin!")
+###  else()
+###    message(STATUS "NanoGUI: building the Python plugin.")
+###  endif()
+###endif()
+###
+###if (NANOGUI_BUILD_PYTHON)
+###  # Need PIC code in libnanogui even when compiled as a static library
+###  set_target_properties(nanogui-obj PROPERTIES POSITION_INDEPENDENT_CODE ON)
+###  set_target_properties(glfw_objects PROPERTIES POSITION_INDEPENDENT_CODE ON)
+###
+###  include_directories("ext/pybind11/include" ${PYTHON_INCLUDE_DIR})
+###  add_library(nanogui-python-obj OBJECT
+###    python/main.cpp
+###    python/constants.cpp
+###    python/eigen.cpp
+###    python/widget.cpp
+###    python/layout.cpp
+###    python/basics.cpp
+###    python/button.cpp
+###    python/tabs.cpp
+###    python/textbox.cpp
+###    python/glcanvas.cpp
+###    python/formhelper.cpp
+###    python/misc.cpp
+###    python/glutil.cpp
+###    python/nanovg.cpp
+###    python/python.h python/py_doc.h
+###    ${LIBNANOGUI_PYTHON_EXTRA_SOURCE})
+###
+###  add_library(nanogui-python SHARED $<TARGET_OBJECTS:nanogui-python-obj>)
+###  set_property(TARGET nanogui-python-obj PROPERTY POSITION_INDEPENDENT_CODE ON)
+###  set_target_properties(nanogui-python PROPERTIES OUTPUT_NAME "nanogui")
+###  target_link_libraries(nanogui-python nanogui ${NANOGUI_EXTRA_LIBS})
+###
+###  # Quench warnings on GCC
+###  if (CMAKE_COMPILER_IS_GNUCC)
+###    set_property(TARGET nanogui-python-obj APPEND PROPERTY COMPILE_OPTIONS "-Wno-unused-variable")
+###  endif()
+###
+###  set_target_properties(nanogui-python PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/python)
+###  # The prefix and extension are provided by FindPythonLibsNew.cmake
+###  set_target_properties(nanogui-python PROPERTIES PREFIX "${PYTHON_MODULE_PREFIX}")
+###  set_target_properties(nanogui-python PROPERTIES SUFFIX "${PYTHON_MODULE_EXTENSION}")
+###
+###  if (WIN32)
+###    # Set output path
+###    set_target_properties(nanogui-python PROPERTIES ARCHIVE_OUTPUT_DIRECTORY_RELEASE "Release/python")
+###    set_target_properties(nanogui-python PROPERTIES ARCHIVE_OUTPUT_DIRECTORY_DEBUG "Debug/python")
+###    set_target_properties(nanogui-python PROPERTIES ARCHIVE_OUTPUT_DIRECTORY_MINSIZEREL "MinSizeRel/python")
+###    set_target_properties(nanogui-python PROPERTIES ARCHIVE_OUTPUT_DIRECTORY_RELWITHDEBINFO "RelWithDebInfo/python")
+###    set_target_properties(nanogui-python PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE "Release/python")
+###    set_target_properties(nanogui-python PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG "Debug/python")
+###    set_target_properties(nanogui-python PROPERTIES RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "MinSizeRel/python")
+###    set_target_properties(nanogui-python PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "RelWithDebInfo/python")
+###
+###    # Link against the Python shared library
+###    target_link_libraries(nanogui-python ${PYTHON_LIBRARY})
+###
+###    if (MSVC)
+###      # Optimize for size, /bigobj is needed for due to the heavy template metaprogramming in pybind11
+###      set_property(TARGET nanogui-python-obj APPEND PROPERTY COMPILE_OPTIONS
+###        "/bigobj" "$<$<CONFIG:Release>:/Os>" "$<$<CONFIG:MinSizeRel>:/Os>"
+###        "$<$<CONFIG:RelWithDebInfo>:/Os>")
+###    endif()
+###  elseif(UNIX)
+###    # Optimize for size
+###    if (U_CMAKE_BUILD_TYPE MATCHES REL)
+###      set_property(TARGET nanogui-python-obj APPEND PROPERTY COMPILE_OPTIONS "-Os")
+###    endif()
+###
+###    # Strip unnecessary sections of the binary on Linux/Mac OS
+###    if(APPLE)
+###      set_target_properties(nanogui-python PROPERTIES MACOSX_RPATH ".")
+###      set_target_properties(nanogui-python PROPERTIES LINK_FLAGS "-undefined dynamic_lookup ")
+###
+###      if (NOT ${U_CMAKE_BUILD_TYPE} MATCHES DEB)
+###        add_custom_command(TARGET nanogui-python POST_BUILD COMMAND strip -u -r $<TARGET_FILE:nanogui-python>)
+###      endif()
+###    else()
+###      if (NOT ${U_CMAKE_BUILD_TYPE} MATCHES DEB)
+###        add_custom_command(TARGET nanogui-python POST_BUILD COMMAND strip $<TARGET_FILE:nanogui-python>)
+###      endif()
+###    endif()
+###  endif()
+###
+###  if (NANOGUI_INSTALL)
+###    install(TARGETS nanogui-python
+###            LIBRARY DESTINATION lib
+###            ARCHIVE DESTINATION lib)
+###  endif()
+###endif()
 
 get_directory_property(NANOGUI_HAS_PARENT PARENT_DIRECTORY)
 if(NANOGUI_HAS_PARENT)
